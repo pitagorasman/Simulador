@@ -1,2 +1,31 @@
-# Simulador
-Simulador de moneda
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Moneda</title>
+</head>
+<body>
+    <h1>Simulador de Lanzamiento de Moneda</h1>
+    <label for="numLanzamientos">Ingrese el número de lanzamientos:</label>
+    <input type="number" id="numLanzamientos" min="1">
+    <button onclick="lanzarMoneda()">Lanzar</button>
+
+    <ul id="resultados"></ul>
+
+    <script>
+        function lanzarMoneda() {
+            let n = document.getElementById("numLanzamientos").value;
+            let resultados = document.getElementById("resultados");
+            resultados.innerHTML = ""; // Limpiar resultados anteriores
+            
+            for (let i = 0; i < n; i++) {
+                let resultado = Math.random() < 0.5 ? "Cara" : "Sello";
+                let item = document.createElement("li");
+                item.textContent = `Lanzamiento ${i+1}: ${resultado}`;
+                resultados.appendChild(item);
+            }
+        }
+    </script>
+</body>
+</html>
