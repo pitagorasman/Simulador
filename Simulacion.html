@@ -3,29 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador de Moneda</title>
+    <title>Simulador de Moneda con Base de Datos y Gráficos</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <h1>Simulador de Lanzamiento de Moneda</h1>
+
     <label for="numLanzamientos">Ingrese el número de lanzamientos:</label>
     <input type="number" id="numLanzamientos" min="1">
     <button onclick="lanzarMoneda()">Lanzar</button>
 
+    <h2>Resultados individuales</h2>
     <ul id="resultados"></ul>
 
+    <h2>Estadísticas</h2>
+    <p id="porcentajes"></p>
+    <p id="media"></p>
+    <p id="desviacion"></p>
+
+    <h2>Gráfica de Distribución</h2>
+    <canvas id="graficoDistribucion" width="400" height="200"></canvas>
+
+    <h2>Gráfica de Medias en función de n</h2>
+    <canvas id="graficoMedias" width="400" height="200"></canvas>
+
     <script>
+        let baseDatos = JSON.parse(localStorage.getItem("historial")) || [];
+
         function lanzarMoneda() {
-            let n = document.getElementById("numLanzamientos").value;
+            let n = parseInt(document.getElementById("numLanzamientos").value);
+            if (!n || n < 1) return;
+
             let resultados = document.getElementById("resultados");
-            resultados.innerHTML = ""; // Limpiar resultados anteriores
-            
+            let cara = 0, sello = 0, sumatoria = 0, valores = [];
+
+            resultados.innerHTML = "";
+
             for (let i = 0; i < n; i++) {
                 let resultado = Math.random() < 0.5 ? "Cara" : "Sello";
+                let valor = resultado === "Cara" ? 1 : 0;
+                valores.push(valor);
+                sumatoria += valor;
+                resultado === "Cara" ? cara++ : sello++;
+
                 let item = document.createElement("li");
-                item.textContent = `Lanzamiento ${i+1}: ${resultado}`;
+                item.textContent = `Lanzamiento ${i + 1}: ${resultado}`;
                 resultados.appendChild(item);
             }
+
+            let media = sumatoria / n;
+            let desviacion = Math.sqrt(valores.reduce((acc, xi) => acc + Math.pow(xi - media, 2), 0) / n);
+            let caraPorcentaje = ((cara / n) * 100).toFixed(2);
+            let selloPorcentaje = ((sello / n) * 100).toFixed(2);
+
+            document.getElementById("porcentajes").textContent = 
+                `Resultados: Cara (${caraPorcentaje}%), Sello (${selloPorcentaje}%)`;
+            document.getElementById("media").textContent = 
+                `Media de los lanzamientos: ${media.toFixed(4)}`;
+            document.getElementById("desviacion").textContent = 
+                `Desviación estándar: ${desviacion.toFixed(4)}`;
+
+            // Almacenar hasta 10 valores en la base de datos local
+            baseDatos.push({ n, media });
+            if (baseDatos.length > 10) baseDatos.shift();
+            localStorage.setItem("historial", JSON.stringify(baseDatos));
+
+            mostrarGraficos(cara, sello);
+            mostrarGraficoMedias();
         }
+
+        function mostrarGraficos(cara, sello) {
+            let ctxDistribucion = document.getElementById("graficoDistribucion").getContext("2d");
+            new Chart(ctxDistribucion, {
+                type: 'pie',
+                data: {
+                    labels: ["Cara", "Sello"],
+                    datasets: [{
+                        data: [cara, sello],
+                        backgroundColor: ["#3498db", "#e74c3c"]
+                    }]
+                },
+                options: { responsive: true }
+            });
+        }
+
+        function mostrarGraficoMedias() {
+            let ctxMedias = document.getElementById("graficoMedias").getContext("2d");
+            let ejecuciones = baseDatos.map(entry => entry.n);
+            let mediasHistorial = baseDatos.map(entry => entry.media);
+
+            new Chart(ctxMedias, {
+                type: 'line',
+                data: {
+                    labels: ejecuciones,
+                    datasets: [{
+                        label: "Media vs Número de Lanzamientos (n)",
+                        data: mediasHistorial,
+                        borderColor: "#3498db",
+                        fill: false
+                    }]
+                },
+                options: { responsive: true }
+            });
+        }
+
+        window.onload = mostrarGraficoMedias;
     </script>
 </body>
 </html>
